@@ -48,7 +48,7 @@
 
 ## 📂 Project Structure
 
-- `lib/chat/triage_engine.dart`: Interface and implementation for `LiteRTGemmaEngine` that communicates with native Android code via Flutter `MethodChannel`.
+• `lib/chat/triage_engine.dart`: Implements the core LLM interaction and includes a critical **PHI scrubbing layer**, ensuring all user input is sanitized of Protected Health Information before being passed to the on-device model for triage assessment.
 - `lib/chat/chat_controller.dart`: State management driving real-time chat UI, dynamic prompts, and response processing.
 - `lib/services/mesh_service.dart`: P2P mesh network routing engine using Wi-Fi Direct & Bluetooth.
 - `android/app/src/main/kotlin/com/example/crisismesh/MainActivity.kt`: Native Kotlin bridge executing Google MediaPipe `LlmInference` to run `gemma3-270m-it-q8.task` directly on device NPU/GPU.
