@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:crisismesh/utils/phi_scrubber.dart';
 import 'package:flutter/services.dart';
 
 abstract class TriageEngine {
@@ -17,7 +17,7 @@ class LiteRTGemmaEngine implements TriageEngine {
         _isInitialized = true;
       }
     } catch (e) {
-      print("Failed to initialize Gemma LiteRT: $e");
+      print('Failed to initialize Gemma LiteRT: $e');
     }
   }
 
@@ -26,7 +26,19 @@ class LiteRTGemmaEngine implements TriageEngine {
     if (!_isInitialized) {
       await initialize();
     }
+
+    // Phase 1: PHI Scrubbing - remove PII before sending to model
+    final sanitized = PhiScrubber.scrub(input);
     
+    // Debug logging (only in debug builds)
+    assert(() {
+      if (sanitized.hasRedactions) {
+        print('[PHI Scrubber] Redacted: ${sanitized.redactionSummary}');
+        print('[PHI Scrubber] Clean text: ${sanitized.cleanText}');
+      }
+      return true;
+    }());
+
     try {
       final prompt = '''<start_of_turn>user
 You are CrisisMesh-AI, an expert emergency medical triage assistant operating entirely offline during a disaster.
@@ -38,7 +50,7 @@ Rules:
 4. Assume hospitals are inaccessible. Provide the best possible field-expedient medical advice.
 5. Do not use filler words or pleasantries.
 
-Emergency Report: $input<end_of_turn>
+Emergency Report: ${sanitized.cleanText}<end_of_turn>
 <start_of_turn>model
 ''';
       final String aiReplyText = await platform.invokeMethod('generateResponse', {
@@ -46,7 +58,7 @@ Emergency Report: $input<end_of_turn>
       });
       return (aiReplyText, <String>['Need more info', 'Thanks']);
     } catch (e) {
-      return ("Error generating response: $e", <String>[]);
+      return ('Error generating response: $e', <String>[]);
     }
   }
 }
