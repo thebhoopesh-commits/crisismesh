@@ -49,3 +49,7 @@ app.*.map.json
 *.litertlm
 android/app/src/main/assets/gemma.task
 
+# Planning docs (local only)
+nextplans.md
+*.planning.md
+
