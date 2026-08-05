@@ -78,14 +78,14 @@ class PhiScrubber {
   // NOTE: All patterns are single-line, no comments — Dart RegExp doesn't support 'x' flag.
   // ============================================================
 
-  /// Names: Capitalized first + last, 2-4 words, allow hyphens/apostrophes/particles.
-  /// Matches: "John Smith", "Mary Jane Watson", "Jean-Paul Sartre", "Maria de los Santos", "O'Connor"
-  /// Does NOT match: "Patient John", "Doctor Smith", "Nurse Jane" (clinical titles excluded)
-  /// Uses negative lookahead to exclude common clinical/medical title words.
-  static final RegExp _nameRegex = RegExp(
-    r"\b(?:(?!Patient\b|Doctor\b|Dr\b|Nurse\b|Physician\b|Medic\b|Paramedic\b|EMT\b|First\s+Responder\b)[A-Z][a-z]{2,}(?:\s+(?:[A-Z][a-z]+|van|de|von|di|la|le|del|della|dos|das|y|Mac|Mc|O'))){1,3}\b",
-    caseSensitive: true,
-  );
+  /// Names: Case-insensitive, allows lowercase, 1-3 words, allow hyphens/apostrophes/particles.
+    /// Matches: "John", "ram", "John Smith", "Mary Jane Watson", "jean-paul", "O'Connor"
+    /// Does NOT match: common clinical titles (case-insensitive) or common English words like "chest", "pain", "taking", "and", etc.
+    /// Uses negative lookahead to exclude common clinical/medical title words and common non-name words.
+    static final RegExp _nameRegex = RegExp(
+      r"\b(?:(?!Patient\b|Doctor\b|Dr\b|Nurse\b|Physician\b|Medic\b|Paramedic\b|EMT\b|First\s+Responder\b|chest\b|pain\b|allergic\b|penicillin\b|lisinopril\b|metformin\b|contact\b|for\b|records\b|temp\b|taking\b|and\b)[A-Za-z][a-zA-Z]{2,}(?:\s+(?:(?!Patient\b|Doctor\b|Dr\b|Nurse\b|Physician\b|Medic\b|Paramedic\b|EMT\b|First\s+Responder\b|chest\b|pain\b|allergic\b|penicillin\b|lisinopril\b|metformin\b|contact\b|for\b|records\b|temp\b|taking\b|and\b)[A-Za-z][a-zA-Z]{2,}|van|de|von|di|la|le|del|della|dos|das|y|Mac|Mc|O'))?){1,3}\b",
+      caseSensitive: false,
+    );
 
   /// Phone numbers: E.164 + US/CA/UK/AU local formats.
   /// Matches full phone numbers including country codes.
