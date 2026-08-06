@@ -4,6 +4,7 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import com.google.mediapipe.tasks.genai.llminference.LlmInference
+import com.google.mediapipe.tasks.genai.llminference.ConstrainedDecodingConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -14,6 +15,31 @@ import java.io.FileOutputStream
 class MainActivity : FlutterActivity() {
     private var llmInference: LlmInference? = null
     private val CHANNEL = "com.crisismesh.ai"
+    
+    // JSON Schema for constrained decoding - must match TRIAGE_JSON_SCHEMA in prompts.dart
+    private val TRIAGE_JSON_SCHEMA = """
+    {
+      "type": "object",
+      "required": ["reply", "chips", "flag_urgent", "in_scope"],
+      "properties": {
+        "reply": {"type": "string"},
+        "chips": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["label", "action"],
+            "properties": {
+              "label": {"type": "string"},
+              "action": {"type": "string", "enum": ["continue_","escalate","locate","dismiss"]},
+              "payload": {"type": "object"}
+            }
+          }
+        },
+        "flag_urgent": {"type": "boolean"},
+        "in_scope": {"type": "boolean"}
+      }
+    }
+    """.trimIndent()
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -32,9 +58,14 @@ class MainActivity : FlutterActivity() {
                                 }
                             }
                             
+                            val constrainedDecoding = ConstrainedDecodingConfig.builder()
+                                .setJsonSchema(TRIAGE_JSON_SCHEMA)
+                                .build()
+                            
                             val options = LlmInference.LlmInferenceOptions.builder()
                                 .setModelPath(modelFile.absolutePath)
                                 .setMaxTokens(512)
+                                .setConstrainedDecodingConfig(constrainedDecoding)
                                 .build()
                             
                             llmInference = LlmInference.createFromOptions(context, options)

@@ -1,14 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'chat_message.dart';
 import 'triage_engine.dart';
+import '../models/triage_response.dart';
 
 final chatControllerProvider = StateNotifierProvider<ChatController, ChatState>((ref) {
-  return ChatController(LiteRTGemmaEngine());
+  final gemmaService = ref.read(gemmaServiceProvider);
+  return ChatController(LiteRTGemmaEngine(gemmaService));
 });
 
 class ChatState {
   final List<ChatMessage> messages;
-  final List<String> suggestionChips;
+  final List<TriageChip> suggestionChips;
   final bool isTyping;
 
   ChatState({
@@ -19,7 +21,7 @@ class ChatState {
 
   ChatState copyWith({
     List<ChatMessage>? messages,
-    List<String>? suggestionChips,
+    List<TriageChip>? suggestionChips,
     bool? isTyping,
   }) {
     return ChatState(
@@ -41,7 +43,11 @@ class ChatController extends StateNotifier<ChatState> {
               text: 'Emergency Triage active. Describe the injury or send a photo.',
             )
           ],
-          suggestionChips: ['Not breathing', 'Bleeding', 'Unconscious'],
+          suggestionChips: [
+            const TriageChip(label: 'Not breathing', action: ChipAction.continue_),
+            const TriageChip(label: 'Bleeding', action: ChipAction.continue_),
+            const TriageChip(label: 'Unconscious', action: ChipAction.continue_),
+          ],
           isTyping: false,
         ));
 
@@ -55,18 +61,14 @@ class ChatController extends StateNotifier<ChatState> {
     );
 
     // Get response from engine
-    final String prompt = isImage ? "I just uploaded an image but you cannot see it. Ask me to describe the injury." : text;
-    final response = await _engine.respond(prompt);
-    final String aiReplyText = response.$1;
-    final List<String> nextChips = response.$2;
+    final response = await _engine.respond(text, isImage: isImage);
 
-    final aiMsg = ChatMessage(from: Sender.ai, text: aiReplyText);
-    
+    final aiMsg = ChatMessage(from: Sender.ai, text: response.reply);
+
     state = state.copyWith(
       messages: [...state.messages, aiMsg],
       isTyping: false,
-      suggestionChips: nextChips,
+      suggestionChips: response.chips,
     );
   }
 }
-
